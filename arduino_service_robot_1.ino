@@ -8,12 +8,12 @@
 #define LINESENSOR1 2
 #define LINESENSOR2 3
 
-#define IRSENSOR1 A4
+#define IRSENSOR1 A0
 
-#define US1_trigPin A0
-#define US1_echoPin A1
-#define US2_trigPin A2
-#define US2_echoPin A3
+#define US1_trigPin A1
+#define US1_echoPin A2
+#define US2_trigPin A3
+#define US2_echoPin A4
 #define minimumRange 0
 #define maximumRange 200
 
@@ -22,6 +22,7 @@
 #define COLOR_S2PIN 8
 #define COLOR_S3PIN 11
 #define COLOR_OUTPIN 12
+float r0, g0, b0, c0;
 
 #define PWMA 5
 #define DIRA 4
@@ -46,6 +47,10 @@ void setup()
   pinMode(COLOR_OUTPIN, INPUT);
   //digitalWrite(COLOR_S0PIN, LOW);
   //digitalWrite(COLOR_S1PIN, HIGH);
+  // Нахождениен коэффициентов для исключения сперктральной характеристики окружающего света
+  r0 = 1000 / (float)readRED();
+  g0 = 1000 / (float)readGREEN();
+  b0 = 1000 / (float)readBLUE();
   // Инициализация выводов для работы с УЗ датчиком
   pinMode(US1_trigPin, OUTPUT);
   pinMode(US1_echoPin, INPUT);
@@ -57,10 +62,35 @@ void setup()
   // Инициализация портов для управления сервомоторами
   servo_1.attach(SERVO1_PWM);
   servo_2.attach(SERVO2_PWM);
+  servo_1.write(60);
+  servo_2.write(30);
 }
 
 void loop()
 {
+  // Ожидание цветной карточки
+  String card_color = "UNDEFINED";
+  while (card_color == "UNDEFINED")
+  {
+    card_color = getColor();
+    Serial.println("Color: " + card_color);
+    delay(1000);
+  }
+  Serial.println("Color detected! Color: " + card_color);
+  // Выбор зоны для выполнения задания
+  if (card_color == "RED")
+  {
+    rotateLeft();
+  }
+  else if (card_color == "GREEN")
+  {
+
+  }
+  else if (card_color == "BLUE")
+  {
+    rotateRight();
+  }
+
 
 
 }
@@ -129,22 +159,22 @@ int readBLUE()
 String getColor()
 {
   String MY_COLOR = "";
-  float clRed = 1000 / (float)readRED();
-  float clGreen = 1000 / (float)readGREEN();
-  float clBlue = 1000 / (float)readBLUE();
-  if ((clRed > 0.600) && (clRed < 0.900) && (clGreen > 0.900) && (clGreen < 1.200) && (clBlue > 3.900) && (clBlue < 4.200))
+  float clRed = 1000 / (float)readRED() - r0;
+  float clGreen = 1000 / (float)readGREEN() - g0;
+  float clBlue = 1000 / (float)readBLUE() - b0;
+  if ((clRed > -0.400) && (clRed < 0.400) && (clGreen > 0.200) && (clGreen < 1.000) && (clBlue > 1.300) && (clBlue < 2.100))
   {
     MY_COLOR = "BLUE";
   }
-  else if ((clRed > 0.700) && (clRed < 1.000) && (clGreen > 1.000) && (clGreen < 1.300) && (clBlue > 3.000) && (clBlue < 3.300))
+  else if ((clRed > -0.300) && (clRed < 0.500) && (clGreen > 0.300) && (clGreen < 1.100) && (clBlue > 0.200) && (clBlue < 1.000))
   {
     MY_COLOR = "GREEN";
   }
-  else if ((clRed > 2.900) && (clRed < 3.200) && (clGreen > 0.600) && (clGreen < 0.900) && (clBlue > 4.450) && (clBlue < 4.750))
+  else if ((clRed > 1.900) && (clRed < 2.700) && (clGreen > -0.100) && (clGreen < 0.700) && (clBlue > 0.200) && (clBlue < 1.000))
   {
     MY_COLOR = "RED";
   }
-  else if ((clRed > 4.050) && (clRed < 4.350) && (clGreen > 2.500) && (clGreen < 2.800) && (clBlue > 8.550) && (clBlue < 8.850))
+  else if ((clRed > 2.900) && (clRed < 3.700) && (clGreen > 1.800) && (clGreen < 2.600) && (clBlue > 0.600) && (clBlue < 1.400))
   {
     MY_COLOR = "YELLOW";
   }
@@ -205,5 +235,25 @@ void motorB_setpower(int pwr)
   // Установка мощности
   int pwmvalue = abs(pwr) * 2.55;
   analogWrite(PWMB, pwmvalue);
+}
+
+// Поворот влево на 90 градусов
+void rotateLeft()
+{
+  motorA_setpower(-100);
+  motorB_setpower(-100);
+  delay(500);
+  motorA_setpower(0);
+  motorB_setpower(0);
+}
+
+// Поворот вправо на 90 градусов
+void rotateRight()
+{
+  motorA_setpower(100);
+  motorB_setpower(100);
+  delay(500);
+  motorA_setpower(0);
+  motorB_setpower(0);
 }
 
