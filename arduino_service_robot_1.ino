@@ -5,9 +5,9 @@
 
 #include <Servo.h>
 
+// Определения для портов
 #define LINESENSOR1 2
 #define LINESENSOR2 3
-
 #define IRSENSOR1 A0
 
 #define US1_trigPin A1
@@ -31,14 +31,25 @@ float r0, g0, b0, c0;
 
 #define SERVO1_PWM 9
 #define SERVO2_PWM 10
-
 Servo servo_1;
 Servo servo_2;
+
+// Параметры зон
+#define DIST1 50
+#define DIST2 100
+#define DIST3 150
+
+// Параметры регулятора
+#define KPID 0.25
+
+// Таймаут для остановки робота
+#define TIMEOUT1 70
 
 void setup()
 {
   // Инициализация последовательного порта
   Serial.begin(9600);
+
   // Инициализация выводов для управления датчиком цвета
   //pinMode(COLOR_S0PIN, OUTPUT);
   //pinMode(COLOR_S1PIN, OUTPUT);
@@ -47,29 +58,36 @@ void setup()
   pinMode(COLOR_OUTPIN, INPUT);
   //digitalWrite(COLOR_S0PIN, LOW);
   //digitalWrite(COLOR_S1PIN, HIGH);
+
   // Нахождениен коэффициентов для исключения сперктральной характеристики окружающего света
   r0 = 1000 / (float)readRED();
   g0 = 1000 / (float)readGREEN();
   b0 = 1000 / (float)readBLUE();
+
   // Инициализация выводов для работы с УЗ датчиком
   pinMode(US1_trigPin, OUTPUT);
   pinMode(US1_echoPin, INPUT);
   pinMode(US2_trigPin, OUTPUT);
   pinMode(US2_echoPin, INPUT);
+
   // Инициализация выходов для управления моторами
   pinMode(DIRA, OUTPUT);
   pinMode(DIRB, OUTPUT);
+
   // Инициализация портов для управления сервомоторами
   servo_1.attach(SERVO1_PWM);
   servo_2.attach(SERVO2_PWM);
-  servo_1.write(60);
-  servo_2.write(30);
 }
 
 void loop()
 {
+  // Начальное положение сервомоторов
+  servo_1.write(60);
+  servo_2.write(30);
+
   // Ожидание цветной карточки
-  String card_color = "UNDEFINED";
+  //String card_color = "UNDEFINED";
+  String card_color = "GREEN";
   while (card_color == "UNDEFINED")
   {
     card_color = getColor();
@@ -77,22 +95,61 @@ void loop()
     delay(1000);
   }
   Serial.println("Color detected! Color: " + card_color);
+
   // Выбор зоны для выполнения задания
   if (card_color == "RED")
   {
     rotateLeft();
+    delay(100);
+    rotateRight();
+    delay(100);
   }
   else if (card_color == "GREEN")
   {
+    delay(100);
+    delay(100);
+    long timecount = 0;
+    while (timecount < TIMEOUT1)
+    {
+      long d = readUS2_distance();
+      float u = 0;
+      if (d != (-1))
+      {
+        u = float(d - DIST2) * KPID;
+        motorA_setpower(85 - u, false);
+        motorB_setpower(85 + u, true);
+      }
 
+      Serial.print(timecount);
+      Serial.print("\t\t");
+      Serial.print(d);
+      Serial.print("\t\t");
+      Serial.print(u);
+      Serial.print("\t\t");
+      Serial.print(85 - u);
+      Serial.print("\t\t");
+      Serial.print(85 + u);
+      Serial.print("\t\t");
+      Serial.println();
+
+      timecount ++;
+      delay(100);
+    }
+    motorA_setpower(0, false);
+    motorB_setpower(0, false);
   }
   else if (card_color == "BLUE")
   {
     rotateRight();
+    delay(100);
+    rotateLeft();
+    delay(100);
   }
 
+  while (true)
+  {
 
-
+  }
 }
 
 // УЗ датчик 1
@@ -186,8 +243,13 @@ String getColor()
 }
 
 // Мощность мотора "A" от -100% до +100% (от знака зависит направление вращения)
-void motorA_setpower(int pwr)
+void motorA_setpower(int pwr, bool invert)
 {
+  // Проверка, инвертирован ли мотор
+  if (invert)
+  {
+    pwr = -pwr;
+  }
   // Проверка диапазонов
   if (pwr < -100)
   {
@@ -212,8 +274,13 @@ void motorA_setpower(int pwr)
 }
 
 // Мощность мотора "B" от -100% до +100% (от знака зависит направление вращения)
-void motorB_setpower(int pwr)
+void motorB_setpower(int pwr, bool invert)
 {
+  // Проверка, инвертирован ли мотор
+  if (invert)
+  {
+    pwr = -pwr;
+  }
   // Проверка диапазонов
   if (pwr < -100)
   {
@@ -240,20 +307,20 @@ void motorB_setpower(int pwr)
 // Поворот влево на 90 градусов
 void rotateLeft()
 {
-  motorA_setpower(-100);
-  motorB_setpower(-100);
+  motorA_setpower(-100, true);
+  motorB_setpower(100, false);
   delay(500);
-  motorA_setpower(0);
-  motorB_setpower(0);
+  motorA_setpower(0, false);
+  motorB_setpower(0, false);
 }
 
 // Поворот вправо на 90 градусов
 void rotateRight()
 {
-  motorA_setpower(100);
-  motorB_setpower(100);
+  motorA_setpower(100, true);
+  motorB_setpower(-100, false);
   delay(500);
-  motorA_setpower(0);
-  motorB_setpower(0);
+  motorA_setpower(0, false);
+  motorB_setpower(0, false);
 }
 
