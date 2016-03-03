@@ -40,10 +40,10 @@ Servo servo_2;
 #define DIST3 150
 
 // Параметры регулятора
-#define KPID 0.25
+#define KPID 1
 
 // Таймаут для остановки робота
-#define TIMEOUT1 70
+#define TIMEOUT1 100
 
 void setup()
 {
@@ -81,9 +81,23 @@ void setup()
 
 void loop()
 {
+  /*
+    // Тестирование датчиков
+    while (true)
+    {
+      Serial.print(readUS1_distance());
+      Serial.print("\t\t");
+      Serial.print(readUS2_distance());
+      Serial.print("\t\t");
+      Serial.print(getColor());
+      Serial.print("\t\t");
+      Serial.println("");
+      delay(100);
+    }
+  */
   // Начальное положение сервомоторов
   servo_1.write(60);
-  servo_2.write(30);
+  servo_2.write(60);
 
   // Ожидание цветной карточки
   //String card_color = "UNDEFINED";
@@ -109,34 +123,90 @@ void loop()
     delay(100);
     delay(100);
     long timecount = 0;
+    // Доезжаем до кубика
     while (timecount < TIMEOUT1)
     {
-      long d = readUS2_distance();
+      long d1 = readUS1_distance();
+      delay(50);
+      long d2 = readUS2_distance();
+      delay(50);
       float u = 0;
-      if (d != (-1))
+      if (d2 != (-1))
       {
-        u = float(d - DIST2) * KPID;
+        u = float(d2 - DIST2) * KPID;
         motorA_setpower(85 - u, false);
         motorB_setpower(85 + u, true);
       }
-
+      if ((d1 != (-1)) && (d1 < 8))
+      {
+        break;
+      }
       Serial.print(timecount);
       Serial.print("\t\t");
-      Serial.print(d);
+      Serial.print(d1);
+      Serial.print("\t\t");
+      Serial.print(d2);
       Serial.print("\t\t");
       Serial.print(u);
       Serial.print("\t\t");
-      Serial.print(85 - u);
-      Serial.print("\t\t");
-      Serial.print(85 + u);
-      Serial.print("\t\t");
       Serial.println();
-
       timecount ++;
-      delay(100);
+      delay(15);
     }
     motorA_setpower(0, false);
     motorB_setpower(0, false);
+    delay(500);
+    // Хватаем кубик
+    servo_2.write(180);
+    delay(500);
+    servo_1.write(120);
+    delay(500);
+    servo_2.write(30);
+    delay(500);
+    servo_1.write(60);
+    delay(500);
+    // Вращаем робота на 180 градусов
+    rotateLeft();
+    delay(100);
+    rotateLeft();
+    delay(100);
+    // Возвращаемся
+    timecount = 0;
+    while (timecount < TIMEOUT1)
+    {
+      long d1 = readUS1_distance();
+      delay(50);
+      long d2 = readUS2_distance();
+      delay(50);
+      float u = 0;
+      if (d2 != (-1))
+      {
+        u = float(d2 - DIST2) * KPID;
+        motorA_setpower(85 - u, false);
+        motorB_setpower(85 + u, true);
+      }
+      if ((d1 != (-1)) && (d1 < 20))
+      {
+        break;
+      }
+      Serial.print(timecount);
+      Serial.print("\t\t");
+      Serial.print(d1);
+      Serial.print("\t\t");
+      Serial.print(d2);
+      Serial.print("\t\t");
+      Serial.print(u);
+      Serial.print("\t\t");
+      Serial.println();
+      timecount ++;
+      delay(15);
+    }
+    motorA_setpower(0, false);
+    motorB_setpower(0, false);
+    delay(500);
+    // Отпускаем кубик
+    servo_2.write(120);
+    delay(500);
   }
   else if (card_color == "BLUE")
   {
@@ -148,7 +218,6 @@ void loop()
 
   while (true)
   {
-
   }
 }
 
