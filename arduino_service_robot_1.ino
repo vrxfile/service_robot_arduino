@@ -40,7 +40,7 @@ Servo servo_2;
 #define DIST3 150
 
 // Параметры регулятора
-#define KPID 1
+#define KPID 2.5
 
 // Таймаут для остановки робота
 #define TIMEOUT1 100
@@ -96,12 +96,11 @@ void loop()
     }
   */
   // Начальное положение сервомоторов
-  servo_1.write(60);
-  servo_2.write(60);
+  servo_1.write(30);
+  servo_2.write(120);
 
   // Ожидание цветной карточки
-  //String card_color = "UNDEFINED";
-  String card_color = "GREEN";
+  String card_color = "UNDEFINED";
   while (card_color == "UNDEFINED")
   {
     card_color = getColor();
@@ -113,112 +112,105 @@ void loop()
   // Выбор зоны для выполнения задания
   if (card_color == "RED")
   {
+    // Поворот влево
     rotateLeft();
-    delay(100);
+    delay(250);
+    // Едем до стены
+    goRobot(DIST1, 15, TIMEOUT1, 85, KPID);  delay(500);
+    // Поворот вправо
     rotateRight();
-    delay(100);
+    delay(250);
+    // Доезжаем до кубика
+    goRobot(9, DIST1, TIMEOUT1, 85, KPID);  delay(500);
+    // Хватаем кубик
+    servo_2.write(180); delay(500);
+    servo_1.write(150); delay(500);
+    servo_2.write(15); delay(500);
+    servo_1.write(30); delay(500);
+    // Отъезжаем чуть назад
+    motorA_setpower(100, true);
+    motorB_setpower(100, false);
+    delay(500);
+    motorA_setpower(0, false);
+    motorB_setpower(0, false);
+    delay(500);
+    // Вращаем робота на 180 градусов
+    rotateLeft();  delay(250);
+    rotateLeft();  delay(250);
+    // Возвращаемся
+    goRobot(DIST3, 15, TIMEOUT1, 85, KPID);  delay(500);
+    // Поворот влево
+    rotateLeft();
+    delay(250);
+    // Едем до середины
+    goRobot(15, DIST2, TIMEOUT1, 85, KPID);  delay(500);
+    // Отпускаем кубик
+    servo_1.write(150); delay(500);
+    servo_2.write(180); delay(500);
+    servo_1.write(30); delay(500);
+    servo_2.write(120); delay(500);
+    // Поворот вправо
+    rotateRight();
+    delay(250);
   }
   else if (card_color == "GREEN")
   {
-    delay(100);
-    delay(100);
-    long timecount = 0;
+    delay(250);
+    delay(250);
     // Доезжаем до кубика
-    while (timecount < TIMEOUT1)
-    {
-      long d1 = readUS1_distance();
-      delay(50);
-      long d2 = readUS2_distance();
-      delay(50);
-      float u = 0;
-      if (d2 != (-1))
-      {
-        u = float(d2 - DIST2) * KPID;
-        motorA_setpower(85 - u, false);
-        motorB_setpower(85 + u, true);
-      }
-      if ((d1 != (-1)) && (d1 < 8))
-      {
-        break;
-      }
-      Serial.print(timecount);
-      Serial.print("\t\t");
-      Serial.print(d1);
-      Serial.print("\t\t");
-      Serial.print(d2);
-      Serial.print("\t\t");
-      Serial.print(u);
-      Serial.print("\t\t");
-      Serial.println();
-      timecount ++;
-      delay(15);
-    }
+    goRobot(9, DIST2, TIMEOUT1, 85, KPID);  delay(500);
+    // Хватаем кубик
+    servo_2.write(180); delay(500);
+    servo_1.write(150); delay(500);
+    servo_2.write(15); delay(500);
+    servo_1.write(30); delay(500);
+    // Отъезжаем чуть назад
+    motorA_setpower(100, true);
+    motorB_setpower(100, false);
+    delay(500);
     motorA_setpower(0, false);
     motorB_setpower(0, false);
-    delay(500);
-    // Хватаем кубик
-    servo_2.write(180);
-    delay(500);
-    servo_1.write(120);
-    delay(500);
-    servo_2.write(30);
-    delay(500);
-    servo_1.write(60);
     delay(500);
     // Вращаем робота на 180 градусов
-    rotateLeft();
-    delay(100);
-    rotateLeft();
-    delay(100);
+    rotateLeft();  delay(250);
+    rotateLeft();  delay(250);
     // Возвращаемся
-    timecount = 0;
-    while (timecount < TIMEOUT1)
-    {
-      long d1 = readUS1_distance();
-      delay(50);
-      long d2 = readUS2_distance();
-      delay(50);
-      float u = 0;
-      if (d2 != (-1))
-      {
-        u = float(d2 - DIST2) * KPID;
-        motorA_setpower(85 - u, false);
-        motorB_setpower(85 + u, true);
-      }
-      if ((d1 != (-1)) && (d1 < 20))
-      {
-        break;
-      }
-      Serial.print(timecount);
-      Serial.print("\t\t");
-      Serial.print(d1);
-      Serial.print("\t\t");
-      Serial.print(d2);
-      Serial.print("\t\t");
-      Serial.print(u);
-      Serial.print("\t\t");
-      Serial.println();
-      timecount ++;
-      delay(15);
-    }
+    goRobot(15, DIST2, TIMEOUT1, 85, KPID);  delay(500);
+    // Отпускаем кубик
+    servo_1.write(120); delay(500);
+    servo_2.write(120); delay(500);
+    servo_1.write(60); delay(500);
+    servo_2.write(120); delay(500);
+    // Отъезжаем чуть назад
+    motorA_setpower(100, true);
+    motorB_setpower(100, false);
+    delay(500);
     motorA_setpower(0, false);
     motorB_setpower(0, false);
     delay(500);
-    // Отпускаем кубик
-    servo_2.write(120);
+    // Вращаем робота на 180 градусов
+    rotateRight();  delay(250);
+    rotateRight();  delay(250);
+    // Отъезжаем чуть назад
+    motorA_setpower(100, true);
+    motorB_setpower(100, false);
+    delay(750);
+    motorA_setpower(0, false);
+    motorB_setpower(0, false);
     delay(500);
   }
   else if (card_color == "BLUE")
   {
     rotateRight();
     delay(100);
+
+
+
+
     rotateLeft();
     delay(100);
   }
 
-  while (true)
-  {
-  }
 }
 
 // УЗ датчик 1
@@ -376,8 +368,8 @@ void motorB_setpower(int pwr, bool invert)
 // Поворот влево на 90 градусов
 void rotateLeft()
 {
-  motorA_setpower(-100, true);
-  motorB_setpower(100, false);
+  motorA_setpower(100, true);
+  motorB_setpower(-100, false);
   delay(500);
   motorA_setpower(0, false);
   motorB_setpower(0, false);
@@ -386,9 +378,47 @@ void rotateLeft()
 // Поворот вправо на 90 градусов
 void rotateRight()
 {
-  motorA_setpower(100, true);
-  motorB_setpower(-100, false);
+  motorA_setpower(-100, true);
+  motorB_setpower(100, false);
   delay(500);
+  motorA_setpower(0, false);
+  motorB_setpower(0, false);
+}
+
+// Движения робота вдоль стены на расстоянии dst2, до препятствия с расстоянием не меньше dst1, таймаут выполнения работы tmout (количество интераций цикла)
+// Коэффициент регуклирования k, скорость робота spd
+void goRobot(long dst1, long dst2, long tmout, int spd, float k)
+{
+  long timecount = 0;
+  // Доезжаем до кубика
+  while (timecount < tmout)
+  {
+    long d1 = readUS1_distance();
+    delay(50);
+    long d2 = readUS2_distance();
+    delay(50);
+    float u = 0;
+    if (d2 != (-1))
+    {
+      u = float(d2 - dst2) * k;
+      motorA_setpower(spd - u, false);
+      motorB_setpower(spd + u, true);
+    }
+    if ((d1 != (-1)) && (d1 < dst1))
+    {
+      break;
+    }
+    Serial.print(timecount);
+    Serial.print("\t\t");
+    Serial.print(d1);
+    Serial.print("\t\t");
+    Serial.print(d2);
+    Serial.print("\t\t");
+    Serial.print(u);
+    Serial.print("\t\t");
+    Serial.println();
+    timecount ++;
+  }
   motorA_setpower(0, false);
   motorB_setpower(0, false);
 }
