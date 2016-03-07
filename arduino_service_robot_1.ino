@@ -40,7 +40,7 @@ Servo servo_2;
 #define DIST3 150
 
 // Параметры регулятора
-#define KPID 1.5
+#define KPID 3.0
 
 void setup()
 {
@@ -118,7 +118,7 @@ void loop()
     // Доезжаем до кубика
     goRobot(8, DIST1, 100, 75, KPID);  delay(500);
     // Хватаем кубик (если не схватили, циклически повтоярем хватание)
-    for (int iter = 0; iter < 5; iter++)
+    for (int iter = 0; iter < 7; iter++)
     {
       long sss1 = readUS1_distance();
       servo_2.write(180); delay(250);
@@ -127,7 +127,7 @@ void loop()
       slowServo(servo_1, 150, 45, 2500); delay(250);
       long sss2 = readUS1_distance();
       // Если схватили кубик (расстояние до следующего изменилось), то прерываем цикл
-      if (abs(sss2 - sss1) > 3)
+      if (abs(sss2 - sss1) > 4)
       {
         break;
       }
@@ -187,7 +187,7 @@ void loop()
     // Доезжаем до кубика
     goRobot(8, DIST2, 100, 75, KPID);  delay(500);
     // Хватаем кубик (если не схватили, циклически повтоярем хватание)
-    for (int iter = 0; iter < 5; iter++)
+    for (int iter = 0; iter < 7; iter++)
     {
       long sss1 = readUS1_distance();
       servo_2.write(180); delay(250);
@@ -196,7 +196,7 @@ void loop()
       slowServo(servo_1, 150, 45, 2500); delay(250);
       long sss2 = readUS1_distance();
       // Если схватили кубик (расстояние до следующего изменилось), то прерываем цикл
-      if (abs(sss2 - sss1) > 3)
+      if (abs(sss2 - sss1) > 4)
       {
         break;
       }
@@ -250,13 +250,13 @@ void loop()
     // Поворачиваем вправо
     rotateRight(); delay(500);
     // Чуть проезжаем
-    goRobot(20, 170, 100, 75, KPID);  delay(500);
+    goRobot(20, 170, 100, 75, KPID / 2);  delay(500);
     // Поворачиваем влево
     rotateLeft(); delay(500);
     // Доезжаем до кубика
-    goRobot(8, DIST3, 100, 75, KPID);  delay(500);
+    goRobot(8, DIST3, 100, 75, KPID / 2);  delay(500);
     // Хватаем кубик (если не схватили, циклически повтоярем хватание)
-    for (int iter = 0; iter < 5; iter++)
+    for (int iter = 0; iter < 7; iter++)
     {
       long sss1 = readUS1_distance();
       servo_2.write(180); delay(250);
@@ -265,7 +265,7 @@ void loop()
       slowServo(servo_1, 150, 45, 2500); delay(250);
       long sss2 = readUS1_distance();
       // Если схватили кубик (расстояние до следующего изменилось), то прерываем цикл
-      if (abs(sss2 - sss1) > 3)
+      if (abs(sss2 - sss1) > 4)
       {
         break;
       }
