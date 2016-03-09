@@ -4,11 +4,12 @@
 */
 
 #include <Servo.h>
+#include <SoftwareSerial.h>
 
 // Определения для портов
 #define LINESENSOR1 2
 #define LINESENSOR2 3
-#define IRSENSOR1 A0
+#define CRASHSENSOR1 A0
 
 #define US1_trigPin A1
 #define US1_echoPin A2
@@ -39,8 +40,18 @@ Servo servo_2;
 #define DIST2 100
 #define DIST3 150
 
-// Параметры регулятора
-#define KPID 3.0
+// Параметры ПИД регулятора
+#define KPID 10.0
+
+// Программный UART для Bluetooth
+SoftwareSerial BT(A5, 13);
+
+// Переменные для управления роботом
+char command = 'S';
+char prevCommand = 'A';
+int velocity = 0;
+unsigned long timer0 = 2000;
+unsigned long timer1 = 0;
 
 void setup()
 {
@@ -75,36 +86,137 @@ void setup()
   servo_1.attach(SERVO1_PWM);
   servo_2.attach(SERVO2_PWM);
   // Начальное положение сервомоторов
-  servo_1.write(45);
-  servo_2.write(120);
+  servo_1.write(45); delay(2000);
+  // Тренировка хвата
+  servo_2.write(180); delay(2000);
+  servo_2.write(0); delay(2000);
 }
+
 
 void loop()
 {
+
   /*
     // Тестирование датчиков
     while (true)
     {
-      Serial.print(readUS1_distance());
-      Serial.print("\t\t");
-      delay(50);
-      Serial.print(readUS2_distance());
-      Serial.print("\t\t");
-      Serial.print(getColor());
-      Serial.print("\t\t");
-      Serial.println("");
-      delay(50);
+    Serial.print(readUS1_distance());
+    Serial.print("\t\t");
+    delay(50);
+    Serial.print(readUS2_distance());
+    Serial.print("\t");
+    Serial.print(getColor());
+    Serial.print("\t");
+    Serial.print(digitalRead(CRASHSENSOR1));
+    Serial.print("\t");
+    Serial.println("");
+    delay(50);
     }
   */
-  // Ожидание цветной карточки
+
+  // Ожидание цветной карточки или команды Bluetooth
   String card_color = "UNDEFINED";
   while (card_color == "UNDEFINED")
   {
+    // Цвет карточки
     card_color = getColor();
+    if (digitalRead(CRASHSENSOR1) == 0)
+    {
+      card_color = "BUTTON";
+    }
     Serial.println("Color: " + card_color);
     delay(100);
   }
+
   Serial.println("Color detected! Color: " + card_color);
+  delay(500);
+
+  // Работа по Bluetooth
+  if (card_color == "BUTTON")
+  {
+    // Инициализация программного последовательного порта для Bluetooth
+    BT.begin(9600);
+    while (digitalRead(CRASHSENSOR1))
+    {
+      // Bluetooth
+      if (BT.available() > 0) {
+        timer1 = millis();
+        prevCommand = command;
+        command = BT.read();
+        if (command != prevCommand) {
+          Serial.println(command);
+          switch (command) {
+            case 'F':
+              motorA_setpower(velocity, false);
+              motorB_setpower(velocity, true);
+              break;
+            case 'B':
+              motorA_setpower(-velocity, false);
+              motorB_setpower(-velocity, true);
+              break;
+            case 'L':
+              motorA_setpower(-velocity, false);
+              motorB_setpower(velocity, true);
+              break;
+            case 'R':
+              motorA_setpower(velocity, false);
+              motorB_setpower(-velocity, true);
+              break;
+            case 'S':
+              motorA_setpower(0, false);
+              motorB_setpower(0, false);
+              break;
+            case 'I':  //FR
+              //yellowCar.ForwardRight_4W(velocity);
+              motorA_setpower(velocity, false);
+              motorB_setpower(velocity / 2, true);
+              break;
+            case 'J':  //BR
+              motorA_setpower(-velocity, false);
+              motorB_setpower(-velocity / 2, true);
+              break;
+            case 'G':  //FL
+              motorA_setpower(velocity / 2, false);
+              motorB_setpower(velocity, true);
+              break;
+            case 'H':  //BL
+              motorA_setpower(-velocity / 2, false);
+              motorB_setpower(-velocity, true);
+              break;
+            case 'D':  //Everything OFF
+              motorA_setpower(0, false);
+              motorB_setpower(0, false);
+              break;
+            default:  //Get velocity
+              if (command == 'q') {
+                velocity = 100;  //Full velocity
+              }
+              else {
+                //Chars '0' - '9' have an integer equivalence of 48 - 57, accordingly.
+                if ((command >= 48) && (command <= 57)) {
+                  //Subtracting 48 changes the range from 48-57 to 0-9.
+                  //Multiplying by 25 changes the range from 0-9 to 0-225.
+                  velocity = (command - 48) * 10;
+                  Serial.println(velocity);
+                }
+              }
+          }
+        }
+      }
+      else {
+        timer0 = millis();  //Get the current time (millis since execution started).
+        //Check if it has been 500ms since we received last command.
+        if ((timer0 - timer1) > 500) {
+          //More tan 500ms have passed since last command received, car is out of range.
+          //Therefore stop the car and turn lights off.
+          motorA_setpower(0, false);
+          motorB_setpower(0, false);
+        }
+      }
+    }
+  }
+  BT.end();
+  delay(500);
 
   // Выбор зоны для выполнения задания
   if (card_color == "RED")
@@ -112,13 +224,13 @@ void loop()
     // Поворачиваем влево
     rotateLeft(); delay(500);
     // Чуть проезжаем
-    goRobot(DIST1, 15, 150, 80, KPID);  delay(500);
+    goRobot(DIST1, 15, 200, 85, KPID);  delay(500);
     // Поворачиваем вправо
     rotateRight(); delay(500);
     // Доезжаем до кубика
-    goRobot(8, DIST1, 150, 80, KPID);  delay(500);
+    goRobot(8, DIST1, 200, 85, KPID);  delay(500);
     // Хватаем кубик (если не схватили, циклически повтоярем хватание)
-    int delta = -5;
+    float delta = -1.0;
     for (int iter = 0; iter < 10; iter++)
     {
       long sss1 = readUS1_distance();
@@ -133,14 +245,15 @@ void loop()
         break;
       }
       // Если не схватили кубик, то отъезжаем и опять подъезжаем к нему
+      //goRobot(0, DIST1 + delta, 35, -75, KPID); delay(500);
       motorA_setpower(100, true);
       motorB_setpower(100, false);
-      delay(1250);
+      delay(1350);
       motorA_setpower(0, false);
       motorB_setpower(0, false);
       delay(250);
-      goRobot(8, DIST1 + delta, 100, 80, KPID);  delay(500);
-      delta = delta + 1;
+      goRobot(8, DIST1 + delta, 200, 85, KPID); delay(500);
+      delta = delta + 0.2;
     }
     // Отъезжаем чуть назад
     motorA_setpower(100, true);
@@ -159,7 +272,7 @@ void loop()
     delay(250);
     rotateRight();  delay(250);
     // Возвращаемся
-    goRobot(15, DIST2, 100, 80, KPID);  delay(500);
+    goRobot(15, DIST2, 200, 85, KPID);  delay(500);
     // Отпускаем кубик
     slowServo(servo_1, 45, 150, 2500); delay(250);
     slowServo(servo_2, 15, 180, 2500); delay(250);
@@ -186,15 +299,18 @@ void loop()
   else if (card_color == "GREEN")
   {
     // Доезжаем до кубика
-    goRobot(8, DIST2, 100, 80, KPID);  delay(500);
+    goRobot(13, DIST2, 50, 75, 2.0);
+    goRobot(13, DIST2, 50, 75, 5.0);
+    goRobot(13, DIST2, 300, 75, 10.0);
+    delay(500);
     // Хватаем кубик (если не схватили, циклически повтоярем хватание)
-    int delta = -5;
+    float delta = -1.0;
     for (int iter = 0; iter < 10; iter++)
     {
       long sss1 = readUS1_distance();
       servo_2.write(180); delay(250);
       slowServo(servo_1, 45, 150, 2500); delay(250);
-      slowServo(servo_2, 180, 15, 2500); delay(250);
+      servo_2.write(0); delay(250);
       slowServo(servo_1, 150, 45, 2500); delay(250);
       long sss2 = readUS1_distance();
       // Если схватили кубик (расстояние до следующего изменилось), то прерываем цикл
@@ -203,14 +319,18 @@ void loop()
         break;
       }
       // Если не схватили кубик, то отъезжаем и опять подъезжаем к нему
+      //goRobot(0, DIST2 + delta, 35, -75, KPID); delay(500);
       motorA_setpower(100, true);
       motorB_setpower(100, false);
-      delay(1250);
+      delay(1500);
       motorA_setpower(0, false);
       motorB_setpower(0, false);
       delay(250);
-      goRobot(8, DIST2 + delta, 100, 80, KPID);  delay(500);
-      delta = delta + 1;
+      goRobot(13, DIST2 + delta, 20, 75, 2.0);
+      goRobot(13, DIST2 + delta, 20, 75, 5.0);
+      goRobot(13, DIST2 + delta, 300, 75, 10.0);
+      delay(500);
+      delta = delta + 0.2;
     }
     // Отъезжаем чуть назад
     motorA_setpower(100, true);
@@ -223,10 +343,10 @@ void loop()
     rotateLeft();  delay(250);
     rotateLeft();  delay(250);
     // Возвращаемся
-    goRobot(15, DIST2, 100, 80, KPID);  delay(500);
+    goRobot(15, DIST2, 300, 75, 2.0);  delay(500);
     // Отпускаем кубик
     slowServo(servo_1, 45, 150, 2500); delay(250);
-    slowServo(servo_2, 15, 180, 2500); delay(250);
+    servo_2.write(0); delay(250);
     slowServo(servo_1, 150, 45, 2500); delay(250);
     servo_2.write(120); delay(250);
     // Отъезжаем чуть назад
@@ -246,19 +366,22 @@ void loop()
     motorA_setpower(0, false);
     motorB_setpower(0, false);
     delay(500);
+    // Тренировка хвата
+    servo_2.write(180); delay(2000);
+    servo_2.write(0); delay(2000);
   }
   else if (card_color == "BLUE")
   {
     // Поворачиваем вправо
     rotateRight(); delay(500);
     // Чуть проезжаем
-    goRobot(20, 170, 100, 80, KPID / 2);  delay(500);
+    goRobot(20, 170, 200, 80, KPID / 2);  delay(500);
     // Поворачиваем влево
     rotateLeft(); delay(500);
     // Доезжаем до кубика
-    goRobot(8, DIST3, 100, 80, KPID / 2);  delay(500);
+    goRobot(8, DIST3, 200, 80, KPID / 2);  delay(500);
     // Хватаем кубик (если не схватили, циклически повтоярем хватание)
-    int delta = -5;
+    int delta = -1.0;
     for (int iter = 0; iter < 10; iter++)
     {
       long sss1 = readUS1_distance();
@@ -273,14 +396,15 @@ void loop()
         break;
       }
       // Если не схватили кубик, то отъезжаем и опять подъезжаем к нему
+      //goRobot(0, DIST3 + delta, 35, -80, KPID); delay(500);
       motorA_setpower(100, true);
       motorB_setpower(100, false);
-      delay(1250);
+      delay(1350);
       motorA_setpower(0, false);
       motorB_setpower(0, false);
       delay(250);
-      goRobot(8, DIST3 + delta, 100, 80, KPID);  delay(500);
-      delta = delta + 1;
+      goRobot(8, DIST3 + delta, 200, 80, KPID);  delay(500);
+      delta = delta + 0.2;
     }
     // Отъезжаем чуть назад
     motorA_setpower(100, true);
@@ -299,7 +423,7 @@ void loop()
     delay(250);
     rotateLeft();  delay(250);
     // Возвращаемся
-    goRobot(15, DIST2, 100, 80, KPID);  delay(500);
+    goRobot(15, DIST2, 200, 80, KPID);  delay(500);
     // Отпускаем кубик
     slowServo(servo_1, 45, 150, 2500); delay(250);
     slowServo(servo_2, 15, 180, 2500); delay(250);
@@ -323,6 +447,7 @@ void loop()
     motorB_setpower(0, false);
     delay(500);
   }
+  delay(500);
 }
 
 // УЗ датчик 1
@@ -482,7 +607,7 @@ void rotateLeft()
 {
   motorA_setpower(100, true);
   motorB_setpower(-100, false);
-  delay(500);
+  delay(450);
   motorA_setpower(0, false);
   motorB_setpower(0, false);
 }
@@ -492,7 +617,7 @@ void rotateRight()
 {
   motorA_setpower(-100, true);
   motorB_setpower(100, false);
-  delay(500);
+  delay(450);
   motorA_setpower(0, false);
   motorB_setpower(0, false);
 }
@@ -509,29 +634,29 @@ void goRobot(long dst1, long dst2, long tmout, int spd, float k)
   while (timecount < tmout)
   {
     d1 = readUS1_distance();
-    delay(50);
-    d2 = readUS2_distance();
-    delay(50);
+    delay(15);
     float u = 0;
-    if (d2 != (-1) && (abs(oldd2 - d2) < 20))
+    if (d2 != (-1) && (abs(oldd2 - d2) < 10))
     {
       u = float(d2 - dst2) * k;
       motorA_setpower(spd - u, false);
       motorB_setpower(spd + u, true);
     }
+    d2 = readUS2_distance();
+    delay(15);
     if ((d1 != (-1)) && (d1 < dst1))
     {
       break;
     }
     oldd2 = d2;
     Serial.print(timecount);
-    Serial.print("\t\t");
+    Serial.print("\t");
     Serial.print(d1);
-    Serial.print("\t\t");
+    Serial.print("\t");
     Serial.print(d2);
-    Serial.print("\t\t");
+    Serial.print("\t");
     Serial.print(u);
-    Serial.print("\t\t");
+    Serial.print("\t");
     Serial.println();
     timecount ++;
   }
