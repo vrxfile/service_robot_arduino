@@ -102,7 +102,7 @@ void loop()
   {
     card_color = getColor();
     Serial.println("Color: " + card_color);
-    delay(250);
+    delay(100);
   }
   Serial.println("Color detected! Color: " + card_color);
 
@@ -112,13 +112,14 @@ void loop()
     // Поворачиваем влево
     rotateLeft(); delay(500);
     // Чуть проезжаем
-    goRobot(DIST1, 15, 100, 75, KPID);  delay(500);
+    goRobot(DIST1, 15, 150, 80, KPID);  delay(500);
     // Поворачиваем вправо
     rotateRight(); delay(500);
     // Доезжаем до кубика
-    goRobot(8, DIST1, 100, 75, KPID);  delay(500);
+    goRobot(8, DIST1, 150, 80, KPID);  delay(500);
     // Хватаем кубик (если не схватили, циклически повтоярем хватание)
-    for (int iter = 0; iter < 7; iter++)
+    int delta = -5;
+    for (int iter = 0; iter < 10; iter++)
     {
       long sss1 = readUS1_distance();
       servo_2.write(180); delay(250);
@@ -132,14 +133,14 @@ void loop()
         break;
       }
       // Если не схватили кубик, то отъезжаем и опять подъезжаем к нему
-      //goRobot(0, DIST1, 35, -75, -KPID);  delay(500);
       motorA_setpower(100, true);
       motorB_setpower(100, false);
-      delay(1000);
+      delay(1250);
       motorA_setpower(0, false);
       motorB_setpower(0, false);
       delay(250);
-      goRobot(8, DIST1, 100, 75, KPID);  delay(500);
+      goRobot(8, DIST1 + delta, 100, 80, KPID);  delay(500);
+      delta = delta + 1;
     }
     // Отъезжаем чуть назад
     motorA_setpower(100, true);
@@ -158,7 +159,7 @@ void loop()
     delay(250);
     rotateRight();  delay(250);
     // Возвращаемся
-    goRobot(15, DIST2, 100, 75, KPID);  delay(500);
+    goRobot(15, DIST2, 100, 80, KPID);  delay(500);
     // Отпускаем кубик
     slowServo(servo_1, 45, 150, 2500); delay(250);
     slowServo(servo_2, 15, 180, 2500); delay(250);
@@ -185,9 +186,10 @@ void loop()
   else if (card_color == "GREEN")
   {
     // Доезжаем до кубика
-    goRobot(8, DIST2, 100, 75, KPID);  delay(500);
+    goRobot(8, DIST2, 100, 80, KPID);  delay(500);
     // Хватаем кубик (если не схватили, циклически повтоярем хватание)
-    for (int iter = 0; iter < 7; iter++)
+    int delta = -5;
+    for (int iter = 0; iter < 10; iter++)
     {
       long sss1 = readUS1_distance();
       servo_2.write(180); delay(250);
@@ -201,14 +203,14 @@ void loop()
         break;
       }
       // Если не схватили кубик, то отъезжаем и опять подъезжаем к нему
-      //goRobot(0, DIST2, 35, -75, -KPID);  delay(500);
       motorA_setpower(100, true);
       motorB_setpower(100, false);
-      delay(1000);
+      delay(1250);
       motorA_setpower(0, false);
       motorB_setpower(0, false);
       delay(250);
-      goRobot(8, DIST2, 100, 75, KPID);  delay(500);
+      goRobot(8, DIST2 + delta, 100, 80, KPID);  delay(500);
+      delta = delta + 1;
     }
     // Отъезжаем чуть назад
     motorA_setpower(100, true);
@@ -221,7 +223,7 @@ void loop()
     rotateLeft();  delay(250);
     rotateLeft();  delay(250);
     // Возвращаемся
-    goRobot(15, DIST2, 100, 75, KPID);  delay(500);
+    goRobot(15, DIST2, 100, 80, KPID);  delay(500);
     // Отпускаем кубик
     slowServo(servo_1, 45, 150, 2500); delay(250);
     slowServo(servo_2, 15, 180, 2500); delay(250);
@@ -250,13 +252,14 @@ void loop()
     // Поворачиваем вправо
     rotateRight(); delay(500);
     // Чуть проезжаем
-    goRobot(20, 170, 100, 75, KPID / 2);  delay(500);
+    goRobot(20, 170, 100, 80, KPID / 2);  delay(500);
     // Поворачиваем влево
     rotateLeft(); delay(500);
     // Доезжаем до кубика
-    goRobot(8, DIST3, 100, 75, KPID / 2);  delay(500);
+    goRobot(8, DIST3, 100, 80, KPID / 2);  delay(500);
     // Хватаем кубик (если не схватили, циклически повтоярем хватание)
-    for (int iter = 0; iter < 7; iter++)
+    int delta = -5;
+    for (int iter = 0; iter < 10; iter++)
     {
       long sss1 = readUS1_distance();
       servo_2.write(180); delay(250);
@@ -270,14 +273,14 @@ void loop()
         break;
       }
       // Если не схватили кубик, то отъезжаем и опять подъезжаем к нему
-      //goRobot(0, DIST3, 35, -75, -KPID);  delay(500);
       motorA_setpower(100, true);
       motorB_setpower(100, false);
-      delay(1000);
+      delay(1250);
       motorA_setpower(0, false);
       motorB_setpower(0, false);
       delay(250);
-      goRobot(8, DIST3, 100, 75, KPID);  delay(500);
+      goRobot(8, DIST3 + delta, 100, 80, KPID);  delay(500);
+      delta = delta + 1;
     }
     // Отъезжаем чуть назад
     motorA_setpower(100, true);
@@ -296,7 +299,7 @@ void loop()
     delay(250);
     rotateLeft();  delay(250);
     // Возвращаемся
-    goRobot(15, DIST2, 100, 75, KPID);  delay(500);
+    goRobot(15, DIST2, 100, 80, KPID);  delay(500);
     // Отпускаем кубик
     slowServo(servo_1, 45, 150, 2500); delay(250);
     slowServo(servo_2, 15, 180, 2500); delay(250);
