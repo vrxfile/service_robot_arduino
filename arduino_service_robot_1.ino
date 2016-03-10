@@ -86,7 +86,7 @@ void setup()
   servo_1.attach(SERVO1_PWM);
   servo_2.attach(SERVO2_PWM);
   // Начальное положение сервомоторов
-  servo_1.write(45); delay(2000);
+  servo_1.write(90); delay(2000);
   // Тренировка хвата
   servo_2.write(180); delay(2000);
   servo_2.write(0); delay(2000);
@@ -125,15 +125,26 @@ void loop()
       card_color = "BUTTON";
     }
     Serial.println("Color: " + card_color);
-    delay(250);
+    delay(100);
   }
-
+  if (card_color == "BUTTON")
+  {
+    for (int ddd = 0; ddd < 100; ddd++)
+    {
+      if (digitalRead(CRASHSENSOR1) == 1)
+      {
+        break;
+      }
+      delay(10);
+    }
+  }
   Serial.println("Color detected! Color: " + card_color);
-  delay(500);
 
   // Работа по Bluetooth
   if (card_color == "BUTTON")
   {
+    int srv1 = 90;
+    int srv2 = 0;
     // Инициализация программного последовательного порта для Bluetooth
     BT.begin(9600);
     while (digitalRead(CRASHSENSOR1))
@@ -183,6 +194,70 @@ void loop()
               motorA_setpower(-velocity / 2, false);
               motorB_setpower(-velocity, true);
               break;
+            case 'W':
+              srv1 = srv1 - 5;
+              if (srv1 <= 0)
+              {
+                srv1 = 0;
+              }
+              servo_1.write(srv1);
+              break;
+            case 'w':
+              srv1 = srv1 - 5;
+              if (srv1 <= 0)
+              {
+                srv1 = 0;
+              }
+              servo_1.write(srv1);
+              break;
+            case 'U':
+              srv1 = srv1 + 5;
+              if (srv1 >= 180)
+              {
+                srv1 = 180;
+              }
+              servo_1.write(srv1);
+              break;
+            case 'u':
+              srv1 = srv1 + 5;
+              if (srv1 >= 180)
+              {
+                srv1 = 180;
+              }
+              servo_1.write(srv1);
+              break;
+            case 'V':
+              srv2 = srv2 - 5;
+              if (srv2 <= 0)
+              {
+                srv2 = 0;
+              }
+              servo_2.write(srv2);
+              break;
+            case 'v':
+              srv2 = srv2 - 5;
+              if (srv2 <= 0)
+              {
+                srv2 = 0;
+              }
+              servo_2.write(srv2);
+              break;
+            case 'X':
+              srv2 = srv2 + 5;
+              if (srv2 >= 180)
+              {
+                srv2 = 180;
+              }
+              servo_2.write(srv2);
+              break;
+            case 'x':
+              srv2 = srv2 + 5;
+              if (srv2 >= 180)
+              {
+                srv2 = 180;
+              }
+              servo_2.write(srv2);
+              break;
             case 'D':  //Everything OFF
               motorA_setpower(0, false);
               motorB_setpower(0, false);
@@ -219,6 +294,7 @@ void loop()
   delay(500);
 
   // Выбор зоны для выполнения задания
+  servo_1.write(45);
   if (card_color == "RED")
   {
     // Поворачиваем влево
